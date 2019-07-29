@@ -113,6 +113,7 @@ func getTransactionByBlock(blockHash chainhash.Hash) {
 				fmt.Println("BTC Resonance NOW!!")
 				fmt.Printf("the amount is          %v\n", btcAmount)
 				fmt.Printf("the receive address is %v\n", receiveAddr[0])
+				fmt.Printf("the trx hash : %v\n", hash)
 			}
 		}
 

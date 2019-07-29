@@ -36,7 +36,7 @@ func main() {
 	client.ListAccounts()
 	transferFrom(client, "default", "SdEFkyipUUzNTtRDjVBWK5ECJkRZRniGMb", 9.9)
 
-	fmt.Println(transfer(client, "SQp9JS8c94hCeZYV9UqxogmdGwVtMJbKBo", 0.5))
+	//fmt.Println(transfer(client, "SQp9JS8c94hCeZYV9UqxogmdGwVtMJbKBo", 0.5))
 	generate(client)
 	//fmt.Println(getBalanceByAccount(client,"default"))
 	//fmt.Println(getBalanceByAccount(client,"kingsley"))
