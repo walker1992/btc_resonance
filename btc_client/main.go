@@ -152,7 +152,6 @@ func getTransaction(txhash *chainhash.Hash) {
 			fmt.Printf("the receive address is %v\n", receiveAddr[0])
 		}
 	}
-
 }
 
 func NewClient() *rpcclient.Client {

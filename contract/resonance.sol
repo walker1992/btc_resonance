@@ -51,21 +51,15 @@ contract Resonance {
         emit LogResonance(_resonanceId,_receiver,_amount);
     }
 
-    // event LogTemp(address manger);
     function verifySignAndCount(bytes32 hash,  uint[] memory v, bytes32[] memory r, bytes32[] memory s) private view returns (uint8 count) {
         for (uint i = 0; i < v.length; i++ ){
             address temp = ecrecover(hash, uint8(v[i]), r[i], s[i]);
             if (managers[temp]){
                 count++;
             }
-            // emit LogTemp(temp);
         }
     }
 
-    // function verifySign(bytes32 hash,  uint  v, bytes32  r, bytes32  s) public view returns( bool) {
-    //      address temp = ecrecover(hash, uint8(v), r, s);
-    //      return managers[temp];
-    // }
 
     function poolBalance() public view returns(uint){
         return address(this).balance;

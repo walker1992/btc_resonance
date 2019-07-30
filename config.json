@@ -1,0 +1,21 @@
+{
+  "BtcPoolAccount": "walker",
+  "BtcPoolAddress": "SdEFkyipUUzNTtRDjVBWK5ECJkRZRniGMb",
+
+  "EthPoolAddress": "0xd3c91803b4816f79dc5af0090fd0fb6d5a44d412",
+
+  "AnchorsServerUrl": "127.0.0.1:8001",
+  "AnchorsClientUrl": "127.0.0.1:8001",
+
+  "EthClientUrl":"http://127.0.0.1:8545",
+  "BtcClientUrl":"localhost:18556",
+  "RpcUser":  "walker",
+  "RpcPassword":"12345",
+
+  "AnchorsAccounts": ["0x51236B7C02956B698185B755B1f3a6a0D4BF20E5",
+                      "0xCbf60c00Cda6d16BBDd4A286748Ff0f640EB4d84",
+                      "0x47CE74D1A1B395117F1B2e9d79072299415F7503"],
+  "AnchorsKeys": ["5071ddb8d4853b1aeffe413bdbea81489ee9ef033c60859ef517eb2c5f4c3888",
+                  "9578b6657475873003c20d61b4574d26845d89aad7c2b3938d39878b1b331211",
+                  "607a7307383a6c28c003a2b6e419b4f070160f9d15fce028471d43c5f030d4ed"]
+}

@@ -34,16 +34,18 @@ const Key2 = "9578b6657475873003c20d61b4574d26845d89aad7c2b3938d39878b1b331211"
 //address 0x47CE74D1A1B395117F1B2e9d79072299415F7503
 const Key3 = "607a7307383a6c28c003a2b6e419b4f070160f9d15fce028471d43c5f030d4ed"
 
+const ResonanceEthPoolAddr = "0xd3c91803b4816f79dc5af0090fd0fb6d5a44d412"
+
 func main() {
 	rpcPath := flag.String("p", "http://127.0.0.1:8545", "rpc host of CCC chain")
 	flag.Parse()
 
-	clientCcc, err := ethclient.Dial(*rpcPath)
+	clientCcc, err := NewEthClient(*rpcPath)
 	if err != nil {
 		log.Crit(err.Error())
 	}
 
-	value, err := clientCcc.BalanceAt(context.Background(), common.HexToAddress("0xa0191488709119f87ebb65a7f2ef8dec76a9547b"), nil)
+	value, err := clientCcc.Client.BalanceAt(context.Background(), common.HexToAddress("0xa0191488709119f87ebb65a7f2ef8dec76a9547b"), nil)
 	if err != nil {
 		log.Crit(err.Error())
 	}
@@ -51,31 +53,36 @@ func main() {
 
 	//deployContract(clientCcc)
 
-	r := NewResonanceTrade("6122ccc16301d4452b84b6c04b14a097fb5d890df638862a8cc15af93bcbdbf8", "0x387eeb1ec3e79e593f0fd3c05d1f1284045c3d37", 100)
-	r.SignMessage(Key1)
-	fmt.Printf("NewResonanceTrade: %v\n", r)
-	fmt.Println(r.BtcHash.String(), r.TradeHash.String())
-	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.R.Bytes(), 32)))
-	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.S.Bytes(), 32)))
-	r.SignMessage(Key2)
-	fmt.Printf("NewResonanceTrade: %v\n", r)
-	fmt.Println(r.BtcHash.String(), r.TradeHash.String())
-	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.R.Bytes(), 32)))
-	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.S.Bytes(), 32)))
-	r.SignMessage(Key3)
-	fmt.Printf("NewResonanceTrade: %v\n", r)
-	fmt.Println(r.BtcHash.String(), r.TradeHash.String())
-	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.R.Bytes(), 32)))
-	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.S.Bytes(), 32)))
-
 }
 
-func NewEthClient() *ethclient.Client {
-	client, err := ethclient.Dial(rpcCCC)
+type EthClient struct {
+	Client *ethclient.Client
+	Path   string
+}
+
+func NewEthClient(path string) (*EthClient, error) {
+	client, err := ethclient.Dial(path)
 	if err != nil {
-		log.Crit(err.Error())
+		return nil, err
 	}
-	return client
+
+	return &EthClient{
+		Client: client,
+		Path:   path,
+	}, nil
+}
+
+func (c *EthClient) CalResonance(btcAmount int64) (ethAmount *big.Int, err error) {
+	value, err := c.Client.BalanceAt(context.Background(), common.HexToAddress(ResonanceEthPoolAddr), nil)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("the value from CCC chain: %s", value.String())
+
+	//poolBalance :=value.Int64()
+	//按照规则开始计算eth上的发币量
+
+	return
 }
 
 func makeAuth(private string, client *ethclient.Client, value int64) *bind.TransactOpts {
@@ -134,11 +141,16 @@ type ResonanceTrade struct {
 	Receiver common.Address `json:"receiver" gencodec:"required"`
 	Amount   *big.Int       `json:"amount" gencodec:"required"`
 
-	TradeHash common.Hash `json:"tradeHash" gencodec:"required"`
+	sig []byte
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
 	R *big.Int `json:"r" gencodec:"required"`
 	S *big.Int `json:"s" gencodec:"required"`
+}
+
+type ResonanceMsg struct {
+	BtcTxId common.Hash `json:"btcTxId" gencodec:"required"`
+	Sig     []byte      `json:"sig" gencodec:"required"`
 }
 
 func NewResonanceTrade(btcHash, receiver string, amount int64) *ResonanceTrade {
@@ -158,8 +170,6 @@ func (m *ResonanceTrade) SignMessage(private string) {
 
 	hash := crypto.Keccak256Hash(data)
 
-	m.TradeHash = hash
-
 	privateKey, err := crypto.HexToECDSA(private)
 	if err != nil {
 		log.Crit("Failed to parse private key: %s", err)
@@ -172,8 +182,36 @@ func (m *ResonanceTrade) SignMessage(private string) {
 	if len(sig) != 65 {
 		panic(fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig)))
 	}
+
+	m.sig = sig
 	m.R = new(big.Int).SetBytes(sig[:32])
 	m.S = new(big.Int).SetBytes(sig[32:64])
 	m.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
-	fmt.Println(sig[32:64])
+}
+
+func (m *ResonanceTrade) Message() *ResonanceMsg {
+	return &ResonanceMsg{
+		BtcTxId: m.BtcHash,
+		Sig:     m.sig,
+	}
+}
+
+func CreateResonanceTrade() {
+	r := NewResonanceTrade("6122ccc16301d4452b84b6c04b14a097fb5d890df638862a8cc15af93bcbdbf8", "0x387eeb1ec3e79e593f0fd3c05d1f1284045c3d37", 100)
+	fmt.Println(r.BtcHash.String())
+	r.SignMessage(Key1)
+	fmt.Printf("NewResonanceTrade: %v\n", r)
+
+	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.R.Bytes(), 32)))
+	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.S.Bytes(), 32)))
+	r.SignMessage(Key2)
+	fmt.Printf("NewResonanceTrade: %v\n", r)
+
+	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.R.Bytes(), 32)))
+	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.S.Bytes(), 32)))
+	r.SignMessage(Key3)
+	fmt.Printf("NewResonanceTrade: %v\n", r)
+
+	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.R.Bytes(), 32)))
+	fmt.Println(hexutil.Encode(common.LeftPadBytes(r.S.Bytes(), 32)))
 }
